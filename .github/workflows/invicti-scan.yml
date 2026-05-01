@@ -1,0 +1,23 @@
+name: Invicti Security Scan
+
+on:
+  push:
+    branches: [ "master", "main" ]
+
+jobs:
+  invicti-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # This is the official Invicti Action
+      - name: Run Invicti Enterprise Scan
+        uses: invicti-security/invicti-enterprise-scan@v1.1.0
+        with:
+          address: 'https://www.your-test-site.com' # The URL you want to scan
+          target-id: ${{ secrets.INVICTI_TARGET_ID }}
+          auth-token: ${{ secrets.INVICTI_AUTH_TOKEN }}
+          # Set the build to fail if High vulnerabilities are found
+          fail-on-severity: 'High'
