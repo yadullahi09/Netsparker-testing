@@ -71,7 +71,9 @@
     "rsn:verbose": "ts-node rsn/rsn-verbose.ts",
     "rsn:update": "ts-node rsn/rsn-update.ts",
     "vagrant": "cd vagrant && vagrant up",
-    "sbom": "cyclonedx-npm --omit=dev --output-format=JSON --output-file=bom.json"
+    "sbom": "cyclonedx-npm --omit=dev --output-format=JSON --output-file=bom.json",
+    "test:server": "npx nyc --report-dir=./build/reports/coverage/server-tests mocha ..."
+}
   },
   "jest": {
     "transform": {
