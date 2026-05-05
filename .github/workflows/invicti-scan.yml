@@ -14,7 +14,7 @@ jobs:
 
       # This is the official Invicti Action
       - name: Run Invicti Enterprise Scan
-        uses: invicti-security/invicti-enterprise-scan@v1.1.0
+        uses: invicti/enterprise-scan-action@v1
         with:
           address: 'https://www.your-test-site.com' # The URL you want to scan
           target-id: ${{ secrets.INVICTI_TARGET_ID }}
