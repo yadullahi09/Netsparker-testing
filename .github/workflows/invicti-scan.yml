@@ -44,7 +44,8 @@ jobs:
       # --- LAYER 2: INVICTI (Enterprise / Runs if Secrets Exist) ---
       - name: Run Invicti Enterprise Scan
         # This only runs if you have added your secrets to GitHub
-        if: "${{ secrets.INVICTI_AUTH_TOKEN != '' }}"
+        #if: "${{ secrets.INVICTI_AUTH_TOKEN != '' }}"
+        if: ${{ secrets.INVICTI_AUTH_TOKEN != '' }}
         run: |
           docker run \
             -e "AppAddress=http://localhost:3000" \
