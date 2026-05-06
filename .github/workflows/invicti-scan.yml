@@ -7,17 +7,22 @@ on:
 jobs:
   invicti-scan:
     runs-on: ubuntu-latest
+    # The modern 2026 way: Define the scanner as a container service
+    container:
+      image: invicti/enterprise-scanner:latest
+      options: --user root
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # This is the official Invicti Action
-      - name: Run Invicti Enterprise Scan
-        uses: invicti/enterprise-scan-action@v1
-        with:
-          address: 'https://www.your-test-site.com' # The URL you want to scan
-          target-id: ${{ secrets.INVICTI_TARGET_ID }}
-          auth-token: ${{ secrets.INVICTI_AUTH_TOKEN }}
-          # Set the build to fail if High vulnerabilities are found
-          fail-on-severity: 'High'
+      - name: Run Dynamic Scan
+        shell: bash
+        run: |
+          # The binary is pre-installed in the container
+          invicti-enterprise-scan \
+            --address "https://www.your-test-site.com" \
+            --target-id "${{ secrets.INVICTI_TARGET_ID }}" \
+            --auth-token "${{ secrets.INVICTI_AUTH_TOKEN }}" \
+            --fail-on-severity "High" \
+            --api-url "https://www.netsparkercloud.com"
