@@ -1,23 +1,65 @@
-name: Invicti Security Scan
+name: Security Analysis Pipeline
 
 on:
   push:
     branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
 
 jobs:
-  invicti-scan:
+  security-testing:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # This is the official Invicti Action
-      - name: Run Invicti Enterprise Scan
-        uses: invicti/enterprise-scan-action@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          address: 'https://www.your-test-site.com' # The URL you want to scan
-          target-id: ${{ secrets.INVICTI_TARGET_ID }}
-          auth-token: ${{ secrets.INVICTI_AUTH_TOKEN }}
-          # Set the build to fail if High vulnerabilities are found
-          fail-on-severity: 'High'
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        # This includes the @istanbuljs fix we discussed
+        run: npm install
+
+      - name: Start Juice Shop in Background
+        run: npm start &
+        env:
+          NODE_ENV: test
+
+      - name: Wait for Server (3000)
+        # Ensures the app is actually up before scanning
+        run: |
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      # --- LAYER 1: OWASP ZAP (Open Source / Always Runs) ---
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:3000'
+          fail_action: false # Keeps the pipeline moving even if bugs are found
+
+      # --- LAYER 2: INVICTI (Enterprise / Runs if Secrets Exist) ---
+      - name: Run Invicti Enterprise Scan
+        # This only runs if you have added your secrets to GitHub
+        if: "${{ secrets.INVICTI_AUTH_TOKEN != '' }}"
+        run: |
+          docker run \
+            -e "AppAddress=http://localhost:3000" \
+            -e "TargetId=${{ secrets.INVICTI_TARGET_ID }}" \
+            -e "AuthToken=${{ secrets.INVICTI_AUTH_TOKEN }}" \
+            -e "FailOnSeverity=High" \
+            invicti/enterprise-scanner:latest
+
+      # --- LAYER 3: CYPRESS (E2E / Record Disabled) ---
+      - name: Execute Cypress Tests
+        uses: cypress-io/github-action@v6
+        with:
+          install: false
+          start: false # App is already running from step above
+          wait-on: 'http://localhost:3000'
+          record: false # Fixed the "Record Key" error here
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
